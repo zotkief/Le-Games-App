@@ -1,0 +1,12 @@
+<div class="grid">
+
+    @for(tile of tiles; track tile.title) {
+        <a
+            class="tile"
+            [routerLink]="tile.route"
+        >
+            {{ tile.title }}
+        </a>
+    }
+
+</div>

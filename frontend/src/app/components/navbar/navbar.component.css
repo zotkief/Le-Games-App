@@ -1,0 +1,14 @@
+nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    padding: 15px;
+
+    background: #202020;
+    color: white;
+}
+
+button {
+    padding: 8px 16px;
+}

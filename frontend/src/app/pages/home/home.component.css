@@ -1,0 +1,35 @@
+.grid {
+  flex: 1;
+  display: grid;
+
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.tile {
+    display: flex;
+
+    justify-content: center;
+    align-items: center;
+
+    height: 150px;
+
+    background: #f0f0f0;
+
+    border-radius: 10px;
+
+    text-decoration: none;
+    color: black;
+
+    transition: 0.2s;
+}
+
+.tile:hover {
+    transform: scale(1.03);
+    background: #e0e0e0;
+}
+
+:host {
+  flex: 1;
+  display: flex;
+}

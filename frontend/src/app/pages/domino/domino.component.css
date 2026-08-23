@@ -1,0 +1,72 @@
+.board-viewport {
+  overflow: auto;
+  max-width: 100%;
+  max-height: 80vh;
+}
+
+.board-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.textbox {
+  position: absolute;
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  color: black;
+  font-weight: bold;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.cell.selected {
+  background-color: blueviolet;
+}
+
+.board {
+  display: grid;
+}
+
+.cell {
+  width: 40px;
+  height: 40px;
+}
+.cell-image {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+
+.board-viewport {
+  display: flex;
+  justify-content: center;
+}
+
+.general-div {
+
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  justify-content: center;
+}
+
+.input-field {
+  width: 25%;
+  padding-left: 10%;
+  padding-right: 10%;
+}
+
+.input-field input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.board,
+.cell {
+  user-select: none;
+  -webkit-user-select: none;
+}

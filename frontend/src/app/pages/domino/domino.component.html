@@ -1,0 +1,67 @@
+<h1>Domino</h1>
+
+<div class="general-div">
+
+  <div class="input-field">
+    <button (click)="addPiece()">Add piece</button>
+    <input
+      type="text"
+      [formControl]="searchControl"
+      (focus)="showSuggestions = true"
+      (blur)="hideSuggestions()"
+    />
+
+    <div
+      class="suggestions"
+      *ngIf="showSuggestions && filteredOptions.length"
+    >
+      <div
+        class="suggestion-item"
+        *ngFor="let option of filteredOptions"
+        (mousedown)="select(option)"
+      >
+        {{ option }}
+      </div>
+    </div>
+  </div>
+
+  <div class="board-viewport">
+    <div class="board-wrapper">
+
+      <div
+        class="board"
+        [style.grid-template-columns]="gridTemplateColumns()"
+      >
+        <ng-container *ngFor="let row of grid; let y = index">
+          <div
+            class="cell"
+            *ngFor="let cell of row; let x = index"
+            (mousedown)="startSelection(x, y)"
+            (mouseenter)="updateSelection(x, y)"
+            (mouseup)="endSelection()"
+            [class.selected]="isSelected(x, y)"
+          >
+            <div class="texture-wrapper">
+              <img
+                [src]="cell.image"
+                class="cell-image"
+                draggable="false"
+              />
+            </div>
+          </div>
+        </ng-container>
+      </div>
+
+      <!-- TEXTBOX OVERLAY -->
+      <div
+        *ngFor="let box of textBoxes"
+        class="textbox"
+        [ngStyle]="getTextBoxStyle(box)"
+      >
+        {{ box.text }}
+      </div>
+
+    </div>
+  </div>
+
+</div>
