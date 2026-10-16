@@ -1,67 +1,109 @@
-<h1>Domino</h1>
-
-<div class="general-div">
-
-  <div class="input-field">
-    <button (click)="addPiece()">Add piece</button>
-    <input
-      type="text"
-      [formControl]="searchControl"
-      (focus)="showSuggestions = true"
-      (blur)="hideSuggestions()"
-    />
-
-    <div
-      class="suggestions"
-      *ngIf="showSuggestions && filteredOptions.length"
-    >
-      <div
-        class="suggestion-item"
-        *ngFor="let option of filteredOptions"
-        (mousedown)="select(option)"
-      >
-        {{ option }}
-      </div>
+<section class="domino-page">
+  <header class="page-heading">
+    <div>
+      <p class="eyebrow"><a routerLink="/">Gry</a><span>/</span> Rozgrywka</p>
+      <h1>Domino <span>miejska układanka</span></h1>
+      <p class="intro">Wybierz dwa sąsiednie pola, wpisz miasto i rozbuduj planszę.</p>
     </div>
-  </div>
+    <div class="game-status"><span></span> {{ loading ? 'Ładowanie gry' : 'Dzisiejsza plansza' }}</div>
+  </header>
 
-  <div class="board-viewport">
-    <div class="board-wrapper">
+  <div class="game-layout">
+    <aside class="control-panel">
+      <div class="panel-heading">
+        <span class="step-number">01</span>
+        <div>
+          <h2>Dodaj miasto</h2>
+          <p>Wybierz element i wpisz jego nazwę.</p>
+        </div>
+      </div>
 
-      <div
-        class="board"
-        [style.grid-template-columns]="gridTemplateColumns()"
-      >
-        <ng-container *ngFor="let row of grid; let y = index">
+      <div class="input-field">
+        <label for="city-search">Nazwa miasta</label>
+        <div class="search-wrap">
+          <span aria-hidden="true">⌕</span>
+          <input
+            id="city-search"
+            type="text"
+            [formControl]="searchControl"
+            placeholder="np. Warszawa"
+            autocomplete="off"
+            (focus)="showSuggestions = true"
+            (blur)="hideSuggestions()"
+          />
+        </div>
+
+        <div class="suggestions" *ngIf="showSuggestions && filteredOptions.length">
           <div
-            class="cell"
-            *ngFor="let cell of row; let x = index"
-            (mousedown)="startSelection(x, y)"
-            (mouseenter)="updateSelection(x, y)"
-            (mouseup)="endSelection()"
-            [class.selected]="isSelected(x, y)"
+            class="suggestion-item"
+            *ngFor="let option of filteredOptions"
+            (mousedown)="select(option)"
           >
-            <div class="texture-wrapper">
-              <img
-                [src]="cell.image"
-                class="cell-image"
-                draggable="false"
-              />
-            </div>
+            {{ option }}
           </div>
-        </ng-container>
+        </div>
       </div>
 
-      <!-- TEXTBOX OVERLAY -->
-      <div
-        *ngFor="let box of textBoxes"
-        class="textbox"
-        [ngStyle]="getTextBoxStyle(box)"
+      <div class="instruction">
+        <span class="instruction-icon" aria-hidden="true">↔</span>
+        <p><strong>Jak grać?</strong> Przeciągnij po planszy, aby zaznaczyć dwa pola obok siebie.</p>
+      </div>
+
+      <button
+        class="add-piece-button"
+        type="button"
+        [disabled]="selectedCells.length !== 2 || !searchControl.value?.trim() || loading"
+        (click)="addPiece()"
       >
-        {{ box.text }}
+        Dodaj do planszy <span aria-hidden="true">↗</span>
+      </button>
+      <p class="selection-hint">
+        {{ selectedCells.length === 2 ? 'Pola zaznaczone — możesz dodać miasto.' : 'Najpierw zaznacz dwa pola.' }}
+      </p>
+    </aside>
+
+    <section class="board-panel" aria-label="Plansza Domino">
+      <div class="board-toolbar">
+        <div>
+          <span class="board-label">PLANSZA GRY</span>
+          <span class="board-subtitle">Przeciągnij, aby zaznaczyć pola</span>
+        </div>
+        <span class="board-marker"><span></span> AKTYWNA</span>
       </div>
 
-    </div>
-  </div>
+      <div class="board-viewport">
+        <div class="board-wrapper">
+          <div class="board" [style.grid-template-columns]="gridTemplateColumns()">
+            <ng-container *ngFor="let row of grid; let y = index">
+              <div
+                class="cell"
+                *ngFor="let cell of row; let x = index"
+                (mousedown)="startSelection(x, y)"
+                (mouseenter)="updateSelection(x, y)"
+                (mouseup)="endSelection()"
+                [class.selected]="isSelected(x, y)"
+              >
+                <div class="texture-wrapper">
+                  <img [src]="cell.image" class="cell-image" draggable="false" alt="" />
+                </div>
+              </div>
+            </ng-container>
+          </div>
 
-</div>
+          <div
+            *ngFor="let box of textBoxes"
+            class="textbox"
+            [ngStyle]="getTextBoxStyle(box)"
+          >
+            {{ box.text }}
+          </div>
+        </div>
+      </div>
+
+      <div class="board-legend">
+        <span><i class="legend-dot empty"></i> Wolne pole</span>
+        <span><i class="legend-dot placed"></i> Element gry</span>
+      </div>
+    </section>
+  </div>
+</section>

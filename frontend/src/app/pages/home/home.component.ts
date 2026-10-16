@@ -14,12 +14,16 @@ export class HomeComponent {
 
   tiles = [
     {
-      title: "Podstrona 1",
-      route: "/domino"
+      title: 'Domino',
+      description: 'Układaj elementy i odkrywaj nowe miasta.',
+      icon: '◈',
+      route: '/domino'
     },
     {
-      title: "Podstrona 2",
-      route: "/page2"
+      title: 'Wkrótce',
+      description: 'Kolejna gra już niedługo dołączy do kolekcji.',
+      icon: '✳',
+      route: '/page2'
     }
   ];
 

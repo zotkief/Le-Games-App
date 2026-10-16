@@ -1,9 +1,11 @@
-<nav>
-    <div class="title">
-        Moja Aplikacja
-    </div>
+<nav class="site-nav" aria-label="Nawigacja główna">
+  <a class="brand" routerLink="/" aria-label="Le Games — strona główna">
+    <span class="brand-mark" aria-hidden="true">L</span>
+    <span>LE<span class="brand-light">GAMES</span></span>
+  </a>
 
-    <button routerLink="/settings">
-        Ustawienia konta
-    </button>
+  <div class="nav-meta">
+    <span class="nav-caption">MAŁA PRZERWA, DOBRA GRA</span>
+    <button type="button" routerLink="/settings">Ustawienia konta <span aria-hidden="true">↗</span></button>
+  </div>
 </nav>

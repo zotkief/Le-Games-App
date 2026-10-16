@@ -1,12 +1,47 @@
-<div class="grid">
+<section class="home-page">
+  <div class="hero">
+    <div class="hero-copy">
+      <p class="eyebrow"><span class="status-dot"></span> Twoja strefa gier</p>
+      <h1>Chwila przerwy?<br /><span>Dobry ruch.</span></h1>
+      <p class="hero-description">
+        Wybierz grę, rozsiądź się wygodnie i sprawdź, dokąd zaprowadzi Cię
+        następny ruch.
+      </p>
+      <a class="hero-link" routerLink="/domino">
+        Zagraj w Domino <span aria-hidden="true">↗</span>
+      </a>
+    </div>
+    <div class="hero-art" aria-hidden="true">
+      <div class="art-glow"></div>
+      <div class="domino domino-back"><span></span><span></span></div>
+      <div class="domino domino-front"><span></span><span></span></div>
+      <span class="spark spark-one">✦</span>
+      <span class="spark spark-two">✦</span>
+    </div>
+    <div class="hero-index"><span>01</span> / 02</div>
+  </div>
 
-    @for(tile of tiles; track tile.title) {
-        <a
-            class="tile"
-            [routerLink]="tile.route"
-        >
-            {{ tile.title }}
+  <section class="games-section" aria-labelledby="games-heading">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Kolekcja</p>
+        <h2 id="games-heading">Wybierz rozgrywkę</h2>
+      </div>
+      <span class="game-count">02 POZYCJE</span>
+    </div>
+
+    <div class="games-grid">
+      @for(tile of tiles; track tile.title; let index = $index) {
+        <a class="game-card" [class.featured]="index === 0" [routerLink]="tile.route">
+          <span class="card-index">0{{ index + 1 }}</span>
+          <span class="game-icon" aria-hidden="true">{{ tile.icon }}</span>
+          <span class="game-info">
+            <span class="game-title">{{ tile.title }}</span>
+            <span class="game-description">{{ tile.description }}</span>
+          </span>
+          <span class="card-arrow" aria-hidden="true">↗</span>
         </a>
-    }
-
-</div>
+      }
+    </div>
+  </section>
+</section>

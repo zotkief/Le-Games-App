@@ -8,6 +8,7 @@ import { ChangeDetectorRef } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { distinctUntilChanged } from 'rxjs/operators';
 import { ReactiveFormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 
 import { of } from 'rxjs';
 import { switchMap, filter, tap } from 'rxjs/operators';
@@ -41,7 +42,7 @@ type Position = {
 @Component({
   selector: 'app-domino',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink],
   templateUrl: './domino.component.html',
   styleUrls: ['./domino.component.css']
 })
@@ -138,8 +139,9 @@ export class DominoComponent implements OnInit {
         this.computeBounds(obstacles);
         this.buildGrid();
         this.applyObstacles(obstacles);
-        this.applyPieces(pieces)
+        this.applyPieces(pieces);
 
+        this.loading = false;
         this.cdr.detectChanges();
       },
       error: err => {
@@ -486,6 +488,7 @@ export class DominoComponent implements OnInit {
       //error
       return;
     }
+    this.loading = true;
     this.gameService.move(city, standardPos, this.game?.gameId ?? -1, direction).subscribe({
       next: game => {
         this.game = game;
@@ -496,8 +499,9 @@ export class DominoComponent implements OnInit {
         this.computeBounds(obstacles);
         this.buildGrid();
         this.applyObstacles(obstacles);
-        this.applyPieces(pieces)
+        this.applyPieces(pieces);
 
+        this.loading = false;
         this.cdr.detectChanges();
       },
       error: err => {
