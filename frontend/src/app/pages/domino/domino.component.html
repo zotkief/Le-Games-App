@@ -5,8 +5,21 @@
       <h1>Domino <span>miejska układanka</span></h1>
       <p class="intro">Wybierz dwa sąsiednie pola, wpisz miasto i rozbuduj planszę.</p>
     </div>
-    <div class="game-status"><span></span> {{ loading ? 'Ładowanie gry' : 'Dzisiejsza plansza' }}</div>
+    <div class="game-status" [class.complete]="game?.complete" role="status" aria-live="polite">
+      <span></span>
+      {{ loading ? 'Ładowanie gry' : game?.complete ? 'Gra zakończona' : 'Dzisiejsza plansza' }}
+    </div>
   </header>
+
+  <div class="game-complete-message" *ngIf="game?.complete" role="status" aria-live="polite">
+    <strong>Gra zakończona!</strong>
+    Zamknąłeś pętlę.
+  </div>
+
+  <div class="game-error-message" *ngIf="errorMessage" role="alert">
+    {{ errorMessage }}
+    <a routerLink="/login">Przejdź do logowania</a>
+  </div>
 
   <div class="game-layout">
     <aside class="control-panel">
@@ -26,6 +39,7 @@
             id="city-search"
             type="text"
             [formControl]="searchControl"
+            [disabled]="loading || (game?.complete ?? false)"
             placeholder="np. Warszawa"
             autocomplete="off"
             (focus)="showSuggestions = true"
@@ -46,19 +60,32 @@
 
       <div class="instruction">
         <span class="instruction-icon" aria-hidden="true">↔</span>
-        <p><strong>Jak grać?</strong> Przeciągnij po planszy, aby zaznaczyć dwa pola obok siebie.</p>
+        <p>
+          <strong>Jak grać?</strong> Przeciągnij po planszy, aby zaznaczyć dwa pola obok siebie.
+        </p>
       </div>
 
       <button
         class="add-piece-button"
         type="button"
-        [disabled]="selectedCells.length !== 2 || !searchControl.value?.trim() || loading"
+        [disabled]="
+          selectedCells.length !== 2 ||
+          !searchControl.value?.trim() ||
+          loading ||
+          (game?.complete ?? false)
+        "
         (click)="addPiece()"
       >
         Dodaj do planszy <span aria-hidden="true">↗</span>
       </button>
       <p class="selection-hint">
-        {{ selectedCells.length === 2 ? 'Pola zaznaczone — możesz dodać miasto.' : 'Najpierw zaznacz dwa pola.' }}
+        {{
+          game?.complete
+            ? 'Gra zakończona — nie można dodawać ruchów.'
+            : selectedCells.length === 2
+              ? 'Pola zaznaczone — możesz dodać miasto.'
+              : 'Najpierw zaznacz dwa pola.'
+        }}
       </p>
     </aside>
 
@@ -68,7 +95,9 @@
           <span class="board-label">PLANSZA GRY</span>
           <span class="board-subtitle">Przeciągnij, aby zaznaczyć pola</span>
         </div>
-        <span class="board-marker"><span></span> AKTYWNA</span>
+        <span class="board-marker" [class.complete]="game?.complete">
+          <span></span> {{ game?.complete ? 'ZAKOŃCZONA' : 'AKTYWNA' }}
+        </span>
       </div>
 
       <div class="board-viewport">
@@ -90,11 +119,7 @@
             </ng-container>
           </div>
 
-          <div
-            *ngFor="let box of textBoxes"
-            class="textbox"
-            [ngStyle]="getTextBoxStyle(box)"
-          >
+          <div *ngFor="let box of textBoxes" class="textbox" [ngStyle]="getTextBoxStyle(box)">
             {{ box.text }}
           </div>
         </div>
