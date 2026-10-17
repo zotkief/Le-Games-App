@@ -2,6 +2,8 @@ package com.example.le_games_app.controller;
 
 import com.example.le_games_app.models.PlayerIdentity;
 import com.example.le_games_app.models.User;
+import com.example.le_games_app.models.domino.DominoGame;
+import com.example.le_games_app.repository.DominoGameRepository;
 import com.example.le_games_app.repository.PlayerIdentityRepository;
 import com.example.le_games_app.repository.UserRepository;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -17,9 +19,11 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -49,6 +53,12 @@ class AuthControllerTest {
 
     @Autowired
     private PlayerIdentityRepository identityRepository;
+
+    @Autowired
+    private DominoGameRepository dominoGameRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @BeforeEach
     void setUp() {
@@ -93,7 +103,7 @@ class AuthControllerTest {
         User user = new User();
         user.setLogin("player1");
         user.setEmail("player1@example.com");
-        user.setPasswordHash("secret");
+        user.setPasswordHash(passwordEncoder.encode("secret"));
         userRepository.save(user);
 
         PlayerIdentity identity = new PlayerIdentity();
@@ -117,7 +127,7 @@ class AuthControllerTest {
         User user = new User();
         user.setLogin("player2");
         user.setEmail("player2@example.com");
-        user.setPasswordHash("secret");
+        user.setPasswordHash(passwordEncoder.encode("secret"));
         userRepository.save(user);
 
         long beforeCount = identityRepository.count();
@@ -140,7 +150,7 @@ class AuthControllerTest {
         User user = new User();
         user.setLogin("player1");
         user.setEmail("player1@example.com");
-        user.setPasswordHash("secret");
+        user.setPasswordHash(passwordEncoder.encode("secret"));
         userRepository.save(user);
 
         mockMvc.perform(post("/api/auth/login")
@@ -186,9 +196,29 @@ class AuthControllerTest {
 
     @Test
     void registerAndLogin() throws Exception {
+        MvcResult guestResult = mockMvc.perform(post("/api/auth/begin"))
+                .andExpect(status().isOk())
+                .andReturn();
+        String guestUid = objectMapper.readTree(
+                guestResult.getResponse().getContentAsString()).get("uid").asText();
+        MvcResult guestLogin = mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(
+                        new LoginRequest(null, null, null, guestUid))))
+            .andExpect(status().isOk())
+            .andReturn();
+        String guestToken = objectMapper.readTree(
+                guestLogin.getResponse().getContentAsString()).get("token").asText();
+
+        PlayerIdentity guestIdentity = identityRepository.findById(UUID.fromString(guestUid)).orElseThrow();
+        DominoGame savedProgress = new DominoGame();
+        savedProgress.setIdentity(guestIdentity);
+        dominoGameRepository.save(savedProgress);
+
         MvcResult result = mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(new LoginRequest("login", "email@email.email", "password", null))))
+                .content(objectMapper.writeValueAsString(
+                        new LoginRequest("login", "email@email.email", "password", guestUid))))
             .andExpect(status().isOk())
             .andReturn();
 
@@ -196,11 +226,53 @@ class AuthControllerTest {
         assertThat(json.has("uid")).isTrue();
 
         String uid = json.get("uid").asText();
-        assertThat(uid).isNotBlank();
+        assertThat(uid).isEqualTo(guestUid);
+        PlayerIdentity linkedIdentity = identityRepository.findById(UUID.fromString(uid)).orElseThrow();
+        assertThat(linkedIdentity.getAccount()).isNotNull();
+
+        mockMvc.perform(get("/api/domino/games")
+                .header("Authorization", "Bearer " + guestToken))
+            .andExpect(status().isUnauthorized());
 
         mockMvc.perform(post("/api/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(new LoginRequest(null, null, null, uid))))
+            .andExpect(status().isUnauthorized());
+
+        MvcResult accountLogin = mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(
+                        new LoginRequest("login", null, "password", null))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.token").isString())
+            .andReturn();
+
+        String accountToken = objectMapper.readTree(
+                accountLogin.getResponse().getContentAsString()).get("token").asText();
+        mockMvc.perform(get("/api/domino/games")
+                .header("Authorization", "Bearer " + accountToken))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.gameIds[0]").value(savedProgress.getId()));
+    }
+
+    @Test
+    void registerWithoutUidCreatesAccountIdentityForPasswordLogin() throws Exception {
+        MvcResult registration = mockMvc.perform(post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(
+                        new LoginRequest("new-player", "new-player@example.com", "password", null))))
+            .andExpect(status().isOk())
+            .andReturn();
+        String uid = objectMapper.readTree(
+                registration.getResponse().getContentAsString()).get("uid").asText();
+
+        PlayerIdentity identity = identityRepository.findById(UUID.fromString(uid)).orElseThrow();
+        assertThat(identity.getAccount()).isNotNull();
+
+        mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(
+                        new LoginRequest("new-player", null, "password", null))))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.token").isString());
     }

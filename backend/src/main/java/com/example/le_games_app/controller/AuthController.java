@@ -5,12 +5,12 @@ import com.example.le_games_app.models.User;
 import com.example.le_games_app.repository.PlayerIdentityRepository;
 import com.example.le_games_app.repository.UserRepository;
 import com.example.le_games_app.security.JwtService;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,13 +30,16 @@ public class AuthController {
     private final UserRepository userRepository;
     private final PlayerIdentityRepository identityRepository;
     private final JwtService jwtService;
+    private final PasswordEncoder passwordEncoder;
 
     public AuthController(UserRepository userRepository,
                           PlayerIdentityRepository identityRepository,
-                          JwtService jwtService) {
+                          JwtService jwtService,
+                          PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.identityRepository = identityRepository;
         this.jwtService = jwtService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Operation(
@@ -104,6 +107,7 @@ public class AuthController {
                     )
             )
     )
+    @Transactional
     @PostMapping("/register")
     public ResponseEntity<RegisterResponse> registerUser(@RequestBody RegisterRequest request) {
 
@@ -114,6 +118,14 @@ public class AuthController {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "No required credentials"
+            );
+        }
+
+        if (userRepository.findByLogin(request.getLogin()).isPresent()
+                || userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Login or email is already in use"
             );
         }
 
@@ -140,18 +152,24 @@ public class AuthController {
                             HttpStatus.BAD_REQUEST,
                             "invalid uuid"
                     ));
+
+            if (identity.getAccount() != null) {
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "Player identity is already linked to an account"
+                );
+            }
         }
 
-        // --- create user ---
         User user = new User();
         user.setEmail(request.getEmail());
         user.setLogin(request.getLogin());
-
-        // NIE twórz SecurityConfig tutaj
-        PasswordEncoder encoder = new BCryptPasswordEncoder();
-        user.setPasswordHash(encoder.encode(request.getPassword()));
-
+        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         userRepository.save(user);
+
+        identity.setAccount(user);
+        user.setIdentity(identity);
+        identityRepository.save(identity);
 
         return ResponseEntity.ok(
                 new RegisterResponse(identity.getUid().toString())
@@ -174,8 +192,10 @@ public class AuthController {
         }
 
         PlayerIdentity identity = optionalIdentity.get();
-        User account = identity.getAccount();
-        String token = jwtService.generateToken(identity, account);
+        if (identity.getAccount() != null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        String token = jwtService.generateToken(identity, null);
         return ResponseEntity.ok(new AuthResponse(token));
     }
 
@@ -198,14 +218,15 @@ public class AuthController {
         }
 
         User user = optionalUser.get();
-        if (!request.getPassword().equals(user.getPasswordHash())) {
+        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         PlayerIdentity identity = user.getIdentity();
         if (identity == null) {
-            identity = new PlayerIdentity();
+            identity = identityRepository.save(new PlayerIdentity());
             identity.setAccount(user);
+            user.setIdentity(identity);
             identityRepository.save(identity);
         }
 
