@@ -95,7 +95,8 @@ button span {
   }
 
   button {
-    padding: 8px 10px;
-    font-size: 0.72rem;
+    gap: 6px;
+    padding: 7px 8px;
+    font-size: 0.66rem;
   }
 }

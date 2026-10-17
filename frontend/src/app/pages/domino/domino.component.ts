@@ -65,6 +65,7 @@ export class DominoComponent implements OnInit {
 
   game?: GameResponse;
   loading = false;
+  errorMessage = '';
 
   minX = -3;
   maxX = 3;
@@ -126,6 +127,7 @@ export class DominoComponent implements OnInit {
 
   createGame() {
     this.loading = true;
+    this.errorMessage = '';
 
     const today = new Date().toISOString().split('T')[0];
 
@@ -146,6 +148,7 @@ export class DominoComponent implements OnInit {
       },
       error: err => {
         console.error('CREATE GAME ERROR:', err);
+        this.errorMessage = this.getRequestErrorMessage(err);
         this.loading = false;
       }
     });
@@ -351,6 +354,8 @@ export class DominoComponent implements OnInit {
   }
 
   startSelection(x: number, y: number) {
+    if (this.loading || this.game?.complete) return;
+
     this.dragging = true;
     this.startX = x;
     this.startY = y;
@@ -362,6 +367,7 @@ export class DominoComponent implements OnInit {
   }
 
   updateSelection(x: number, y: number) {
+    if (this.loading || this.game?.complete) return;
     if (!this.dragging) return;
 
     this.selectedCells = [];
@@ -410,6 +416,12 @@ export class DominoComponent implements OnInit {
   }
 
   endSelection() {
+    if (this.loading || this.game?.complete) {
+      this.dragging = false;
+      this.selectedCells = [];
+      return;
+    }
+
     this.dragging = false;
 
     if(this.selectedCells.length<2)
@@ -435,6 +447,8 @@ export class DominoComponent implements OnInit {
   }
 
   select(option: string) {
+    if (this.loading || this.game?.complete) return;
+
     this.searchControl.setValue(option);
     this.filteredOptions = [];
     this.showSuggestions = false;
@@ -447,6 +461,9 @@ export class DominoComponent implements OnInit {
   }
 
   addPiece() {
+    if (this.loading || this.game?.complete) return;
+    this.errorMessage = '';
+
     if(this.selectedCells.length!=2)
     {
       //error
@@ -479,9 +496,10 @@ export class DominoComponent implements OnInit {
     {
       direction = "DOWN";
     }
-    let standardPos = cell_0;
-    standardPos.x += this.minX;
-    standardPos.y = this.maxX - standardPos.y - 1;
+    const standardPos = {
+      x: this.minX + cell_0.x,
+      y: this.maxY - cell_0.y
+    };
     const city = this.searchControl.value?.trim() ?? '';
     if(city.length == 0)
     {
@@ -492,6 +510,15 @@ export class DominoComponent implements OnInit {
     this.gameService.move(city, standardPos, this.game?.gameId ?? -1, direction).subscribe({
       next: game => {
         this.game = game;
+        this.searchControl.setValue('');
+        this.filteredOptions = [];
+        this.showSuggestions = false;
+        if (game.complete) {
+          this.dragging = false;
+          this.selectedCells = [];
+          this.filteredOptions = [];
+          this.showSuggestions = false;
+        }
 
         const obstacles = game.obstacles ?? [];
         const pieces = game.pieces ?? [];
@@ -506,8 +533,16 @@ export class DominoComponent implements OnInit {
       },
       error: err => {
         console.error('MOVE ERROR:', err);
+        this.errorMessage = this.getRequestErrorMessage(err);
         this.loading = false;
       }
     });
+  }
+
+  private getRequestErrorMessage(error: any): string {
+    return error?.error?.detail
+      ?? error?.error?.message
+      ?? error?.message
+      ?? 'Nie udało się połączyć z grą. Spróbuj ponownie.';
   }
 }

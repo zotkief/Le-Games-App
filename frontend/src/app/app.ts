@@ -3,7 +3,6 @@ import { RouterOutlet } from '@angular/router';
 
 import { NavbarComponent } from './components/navbar/navbar.component';
 import { FooterComponent } from './components/footer/footer.component';
-import { AuthService } from './services/auth.service';
 
 @Component({
   selector: 'app-root',
@@ -16,7 +15,4 @@ import { AuthService } from './services/auth.service';
   templateUrl: './app.html',
 })
 export class App {
-  constructor(private authService: AuthService) {
-    this.authService.initializeUser();
-  }
 }

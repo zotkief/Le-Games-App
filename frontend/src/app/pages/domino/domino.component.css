@@ -74,6 +74,41 @@ h1 span {
   box-shadow: 0 0 10px rgba(100, 216, 190, 0.7);
 }
 
+.game-status.complete {
+  border-color: rgba(100, 216, 190, 0.35);
+  color: var(--accent);
+}
+
+.game-complete-message {
+  margin: -9px 0 20px;
+  padding: 14px 17px;
+  border: 1px solid rgba(100, 216, 190, 0.3);
+  border-radius: 12px;
+  background: rgba(100, 216, 190, 0.08);
+  color: #c2d0d0;
+  font-size: 0.88rem;
+}
+
+.game-complete-message strong {
+  margin-right: 5px;
+  color: var(--accent);
+}
+
+.game-error-message {
+  margin: -9px 0 20px;
+  padding: 14px 17px;
+  border: 1px solid rgba(255, 154, 154, 0.35);
+  border-radius: 12px;
+  background: rgba(255, 100, 100, 0.08);
+  color: #ffc0c0;
+  font-size: 0.88rem;
+}
+
+.game-error-message a {
+  margin-left: 8px;
+  color: var(--accent);
+}
+
 .game-layout {
   display: grid;
   grid-template-columns: 290px minmax(0, 1fr);
@@ -296,6 +331,15 @@ h2 {
   font-size: 0.64rem;
   font-weight: 700;
   letter-spacing: 0.08em;
+}
+
+.board-marker.complete {
+  color: var(--muted);
+}
+
+.board-marker.complete span {
+  background: var(--muted);
+  box-shadow: none;
 }
 
 .board-viewport {
