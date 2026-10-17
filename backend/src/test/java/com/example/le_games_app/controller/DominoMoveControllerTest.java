@@ -5,10 +5,13 @@ import com.example.le_games_app.controller.DominoController.SuggestionResponse;
 import com.example.le_games_app.models.PlayerIdentity;
 import com.example.le_games_app.models.domino.DominoGame;
 import com.example.le_games_app.models.domino.DominoPiece;
+import com.example.le_games_app.utils.classes.IntPoint2D;
 import com.example.le_games_app.repository.DominoGameRepository;
 import com.example.le_games_app.repository.PlayerIdentityRepository;
 import com.example.le_games_app.repository.UserRepository;
+import com.example.le_games_app.security.JwtService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,6 +60,9 @@ class DominoMoveControllerTest {
     @Autowired
     private DominoGameRepository dominoGameRepository;
 
+    @Autowired
+    private JwtService jwtService;
+
     @BeforeEach
     void setUp() {
         dominoGameRepository.deleteAll();
@@ -68,6 +74,7 @@ class DominoMoveControllerTest {
     void moveSucceeds_addsPiece() throws Exception {
         PlayerIdentity identity = new PlayerIdentity();
         identityRepository.save(identity);
+        String token = jwtService.generateToken(identity, null);
 
         DominoGame game = new DominoGame();
         game.setIdentity(identity);
@@ -120,6 +127,7 @@ class DominoMoveControllerTest {
         int prevSize = saved.getPieces().size();
 
         mockMvc.perform(post("/api/domino/move")
+            .header("Authorization", "Bearer " + token)
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(payload)))
         .andExpect(status().isOk())
@@ -135,6 +143,7 @@ class DominoMoveControllerTest {
     void moveFails_badRequest() throws Exception {
         PlayerIdentity identity = new PlayerIdentity();
         identityRepository.save(identity);
+        String token = jwtService.generateToken(identity, null);
 
         DominoGame game = new DominoGame();
         game.setIdentity(identity);
@@ -149,9 +158,78 @@ class DominoMoveControllerTest {
         );
 
         mockMvc.perform(post("/api/domino/move")
+            .header("Authorization", "Bearer " + token)
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(payload)))
         .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void moveClosingLoop_marksGameCompleteAndRejectsFurtherMoves() throws Exception {
+        PlayerIdentity identity = new PlayerIdentity();
+        identityRepository.save(identity);
+        String token = jwtService.generateToken(identity, null);
+
+        DominoGame game = new DominoGame();
+        game.setIdentity(identity);
+        DominoGame saved = dominoGameRepository.save(game);
+
+        saved.getPieces().clear();
+        saved.getPieces().add(new DominoPiece(
+            saved,
+            new IntPoint2D(10, 10),
+            DominoPiece.Direction.RIGHT,
+            "TEST"
+        ));
+        ReflectionTestUtils.setField(saved, "beginPos", new IntPoint2D(0, 0));
+        ReflectionTestUtils.setField(saved, "endPos", new IntPoint2D(1, 2));
+        ReflectionTestUtils.setField(saved, "beginLetter", 'A');
+
+        String suggestionsJson = mockMvc.perform(
+                get("/api/domino/suggestions")
+                    .param("text", "A")
+                    .contentType(MediaType.APPLICATION_JSON)
+            )
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+        SuggestionResponse suggestions =
+            objectMapper.readValue(suggestionsJson, SuggestionResponse.class);
+        String city = suggestions.getSuggestions().get(0);
+
+        char cityLastLetter = city.charAt(city.length() - 1);
+        ReflectionTestUtils.setField(
+            saved,
+            "endLetter",
+            cityLastLetter == 'Z' ? 'Y' : 'Z'
+        );
+        dominoGameRepository.save(saved);
+
+        Map<String, Object> payload = Map.of(
+            "x", 0,
+            "y", 1,
+            "direction", "RIGHT",
+            "gameId", saved.getId(),
+            "cityName", city
+        );
+
+        mockMvc.perform(post("/api/domino/move")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(payload)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.complete").value(true));
+
+        DominoGame completedGame = dominoGameRepository.findById(saved.getId()).orElseThrow();
+        assertEquals(DominoGame.GameState.FINISHED, completedGame.getGameState());
+        assertEquals(true, completedGame.isComplete());
+
+        mockMvc.perform(post("/api/domino/move")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(payload)))
+            .andExpect(status().isConflict());
     }
 
 }
