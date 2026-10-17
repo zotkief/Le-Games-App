@@ -108,6 +108,20 @@ class DominoNewGameControllerTest {
     }
 
     @Test
+    void newGameRequiresValidIdentityToken() throws Exception {
+        mockMvc.perform(post("/api/domino/newgame")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new HashMap<>())))
+            .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(post("/api/domino/newgame")
+                .header("Authorization", "Bearer invalid-token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(new HashMap<>())))
+            .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void newGamePersists_withDate() throws Exception {
         PlayerIdentity identity = new PlayerIdentity();
         identityRepository.save(identity);

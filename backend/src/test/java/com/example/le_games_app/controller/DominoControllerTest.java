@@ -148,7 +148,9 @@ class DominoControllerTest {
         game.setIdentity(identity);
         DominoGame savedGame = dominoGameRepository.save(game);
 
+        String token = jwtService.generateToken(identity, null);
         mockMvc.perform(get("/api/domino/game/" + savedGame.getId())
+            .header("Authorization", "Bearer " + token)
             .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.obstacles").isArray())
@@ -157,9 +159,31 @@ class DominoControllerTest {
 
     @Test
     void getGameStateReturnsNotFoundForInvalidGameId() throws Exception {
+        PlayerIdentity identity = new PlayerIdentity();
+        identityRepository.save(identity);
+        String token = jwtService.generateToken(identity, null);
+
         mockMvc.perform(get("/api/domino/game/99999")
+            .header("Authorization", "Bearer " + token)
             .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getGameStateDoesNotExposeAnotherPlayersGame() throws Exception {
+        PlayerIdentity owner = new PlayerIdentity();
+        identityRepository.save(owner);
+        PlayerIdentity requester = new PlayerIdentity();
+        identityRepository.save(requester);
+
+        DominoGame game = new DominoGame();
+        game.setIdentity(owner);
+        DominoGame savedGame = dominoGameRepository.save(game);
+        String token = jwtService.generateToken(requester, null);
+
+        mockMvc.perform(get("/api/domino/game/" + savedGame.getId())
+                .header("Authorization", "Bearer " + token))
+            .andExpect(status().isNotFound());
     }
 
     public static class SuggestionRequest {

@@ -3,15 +3,12 @@ package com.example.le_games_app.controller;
 import com.example.le_games_app.models.domino.DominoGame;
 import com.example.le_games_app.models.domino.DominoPiece;
 import com.example.le_games_app.models.domino.DominoObstacle;
-import com.example.le_games_app.repository.PlayerIdentityRepository;
-import com.example.le_games_app.security.JwtService;
+import com.example.le_games_app.security.PlayerIdentityAccessService;
 import com.example.le_games_app.support.components.CityIndex;
 import com.example.le_games_app.utils.classes.IntPoint2D;
 import com.example.le_games_app.repository.DominoGameRepository;
 
 import java.util.ArrayList;
-import java.util.UUID;
-import io.jsonwebtoken.Claims;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,22 +31,23 @@ import java.util.List;
 public class DominoController {
 
     private final CityIndex cityIndex;
-    private final PlayerIdentityRepository identityRepository;
     private final DominoGameRepository dominoGameRepository;
-    private final JwtService jwtService;
+    private final PlayerIdentityAccessService identityAccessService;
 
-    public DominoController(PlayerIdentityRepository identityRepository,
-                          DominoGameRepository dominoGameRepository,
-                          JwtService jwtService,
+    public DominoController(DominoGameRepository dominoGameRepository,
+                          PlayerIdentityAccessService identityAccessService,
                           CityIndex cityIndex) {
         this.cityIndex = cityIndex;
-        this.identityRepository = identityRepository;
         this.dominoGameRepository = dominoGameRepository;
-        this.jwtService = jwtService;
+        this.identityAccessService = identityAccessService;
     }
 
     @PostMapping("/move")
-    public ResponseEntity<GameResponse> move(@RequestBody MoveRequest request) {
+    public ResponseEntity<GameResponse> move(
+            @RequestBody MoveRequest request,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+
+        PlayerIdentity identity = identityAccessService.requireIdentity(authHeader);
 
         String query = request.getCityName().toUpperCase();
 
@@ -68,12 +66,19 @@ public class DominoController {
         DominoPiece.Direction direction = request.getDirection();
         long gameId = request.getGameId();
 
-        DominoGame game = dominoGameRepository.getReferenceById(gameId);
-        DominoPiece p = game.getPieces().get(0);
-        System.out.println(p.getDirection().toString());
-        System.out.println(p.getPosition().getX());
-        System.out.println(p.getPosition().getY());
-        System.out.println(p.getCityName());
+        DominoGame game = dominoGameRepository.findById(gameId)
+                .filter(candidate -> candidate.getIdentity().getUid().equals(identity.getUid()))
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Game not found"
+                ));
+
+        if (game.getGameState() == DominoGame.GameState.FINISHED) {
+            throw new ResponseStatusException(
+                HttpStatus.CONFLICT,
+                "game is already finished"
+            );
+        }
 
         if (!game.putPiece(newPoint, direction, city)) {
             throw new ResponseStatusException(
@@ -104,24 +109,9 @@ public class DominoController {
 
     @GetMapping("/games")
     public ResponseEntity<UserGamesResponse> getUserGames(
-            @RequestHeader("Authorization") String authHeader) {
-        
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED,
-                    "Missing or invalid Authorization header"
-            );
-        }
-        
-        String token = authHeader.substring(7);
-        Claims claims = jwtService.parseToken(token);
-        UUID playerUid = UUID.fromString(claims.get("uid").toString());
-        
-        PlayerIdentity identity = identityRepository.findById(playerUid)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Player identity not found"
-                ));
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+
+        PlayerIdentity identity = identityAccessService.requireIdentity(authHeader);
         
         List<DominoGame> games = dominoGameRepository.findOngoingGamesByIdentity(identity);
         List<Long> gameIds = new ArrayList<>();
@@ -133,9 +123,13 @@ public class DominoController {
     }
 
     @GetMapping("/game/{gameId}")
-    public ResponseEntity<GameResponse> getGameState(@PathVariable Long gameId) {
-        
+    public ResponseEntity<GameResponse> getGameState(
+            @PathVariable Long gameId,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+
+        PlayerIdentity identity = identityAccessService.requireIdentity(authHeader);
         DominoGame game = dominoGameRepository.findById(gameId)
+                .filter(candidate -> candidate.getIdentity().getUid().equals(identity.getUid()))
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Game not found"
@@ -149,24 +143,9 @@ public class DominoController {
     @PostMapping("/newgame")
     public ResponseEntity<GameResponse> newGame(
             @RequestBody NewGameRequest request,
-            @RequestHeader("Authorization") String authHeader) {
-        
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED,
-                    "Missing or invalid Authorization header"
-            );
-        }
-        
-        String token = authHeader.substring(7);
-        Claims claims = jwtService.parseToken(token);
-        UUID playerUid = UUID.fromString(claims.get("uid").toString());
-        
-        PlayerIdentity identity = identityRepository.findById(playerUid)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Player identity not found"
-                ));
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+
+        PlayerIdentity identity = identityAccessService.requireIdentity(authHeader);
         
         LocalDate date = request.getDate();
         DominoGame game;

@@ -131,6 +131,10 @@ public class DominoGame {
                             DominoPiece.Direction direction,
                             String city) {
 
+        if (gameState == GameState.FINISHED) {
+            return false;
+        }
+
         city = city.toUpperCase();
 
         IntPoint2D pieceEnd = pos.copy();
@@ -229,11 +233,8 @@ public class DominoGame {
             endLetter = pieceLetters[freePieceEnd];
         }
 
-        // sprawdzenie zakończenia gry
-        if (
-                beginPos.squareDist(endPos) == 1 &&
-                beginLetter.equals(endLetter)
-        ) {
+        // A loop is closed when its two free ends become adjacent.
+        if (beginPos.squareDist(endPos) == 1) {
             gameState = GameState.FINISHED;
         }
 
