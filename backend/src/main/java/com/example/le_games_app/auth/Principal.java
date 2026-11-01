@@ -6,7 +6,7 @@ public class Principal {
 
     private UUID uid;
     private Long accountId;
-    private String authType; // GUEST / ACCOUNT
+    private String authType;
 
     public boolean isGuest() {
         return "GUEST".equals(authType);

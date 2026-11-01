@@ -1,27 +1,29 @@
 package com.example.le_games_app.controller;
 
-import com.example.le_games_app.models.PlayerIdentity;
-import com.example.le_games_app.models.User;
-import com.example.le_games_app.repository.PlayerIdentityRepository;
-import com.example.le_games_app.repository.UserRepository;
-import com.example.le_games_app.security.JwtService;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.transaction.annotation.Transactional;
 import java.util.Optional;
 import java.util.UUID;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.example.le_games_app.dto.ErrorResponse;
+import com.example.le_games_app.models.PlayerIdentity;
+import com.example.le_games_app.models.User;
+import com.example.le_games_app.repository.PlayerIdentityRepository;
+import com.example.le_games_app.repository.UserRepository;
+import com.example.le_games_app.security.JwtService;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import com.example.le_games_app.dto.ErrorResponse;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -131,7 +133,6 @@ public class AuthController {
 
         PlayerIdentity identity;
 
-        // --- UID handling ---
         if (request.getUid() == null || request.getUid().isBlank()) {
             identity = new PlayerIdentity();
             identity = identityRepository.save(identity);
