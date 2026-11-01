@@ -20,10 +20,10 @@ export class HomeComponent {
       route: '/domino'
     },
     {
-      title: 'Wkrótce',
-      description: 'Kolejna gra już niedługo dołączy do kolekcji.',
+      title: 'Zgadnij miasto',
+      description: 'Rozpoznaj miasto po przebiegu jego tras tramwajowych.',
       icon: '✳',
-      route: '/page2'
+      route: '/guess-city'
     }
   ];
 

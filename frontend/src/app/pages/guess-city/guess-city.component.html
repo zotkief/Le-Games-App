@@ -1,0 +1,126 @@
+<section class="guess-city-page">
+  <header class="page-heading">
+    <div>
+      <p class="eyebrow"><a routerLink="/">Gry</a><span>/</span> Rozgrywka</p>
+      <h1>Zgadnij miasto <span>codzienna zagadka</span></h1>
+      <p class="intro">Odkrywaj trasę tramwajową i spróbuj odgadnąć miasto.</p>
+    </div>
+    <div
+      class="game-status"
+      [class.complete]="round && !round.inProgress"
+      role="status"
+      aria-live="polite"
+    >
+      <span></span>
+      {{
+        loading
+          ? 'Ładowanie gry'
+          : round?.inProgress
+            ? 'Rozgrywka aktywna'
+            : round
+              ? 'Gra zakończona'
+              : 'Gra dzienna'
+      }}
+    </div>
+  </header>
+
+  <div class="game-error-message" *ngIf="errorMessage" role="alert">{{ errorMessage }}</div>
+  <div
+    class="game-complete-message"
+    *ngIf="round && !round.inProgress"
+    role="status"
+    aria-live="polite"
+  >
+    <strong>{{ successMessage || 'Ta gra jest już zakończona.' }}</strong>
+    Miasto: {{ round.cityAsciiName }}
+  </div>
+
+  <div class="game-layout">
+    <aside class="control-panel">
+      <div class="panel-heading">
+        <span class="step-number">01</span>
+        <div>
+          <h2>Odgadnij miasto</h2>
+          <p>Przyjrzyj się przebiegowi tras i wpisz nazwę miasta.</p>
+        </div>
+      </div>
+
+      <div class="input-field">
+        <label for="guess-city-search">Nazwa miasta</label>
+        <div class="search-wrap">
+          <span aria-hidden="true">⌕</span>
+          <input
+            id="guess-city-search"
+            type="text"
+            [formControl]="searchControl"
+            [disabled]="loading || submitting || !round?.inProgress"
+            placeholder="np. Warszawa"
+            autocomplete="off"
+            (focus)="showSuggestions = true"
+            (blur)="hideSuggestions()"
+            (keydown.enter)="submitGuess()"
+          />
+        </div>
+        <div class="suggestions" *ngIf="showSuggestions && suggestions.length">
+          <button
+            class="suggestion-item"
+            type="button"
+            *ngFor="let city of suggestions"
+            (mousedown)="selectSuggestion(city)"
+          >
+            {{ city }}
+          </button>
+        </div>
+      </div>
+
+      <button
+        class="submit-button"
+        type="button"
+        [disabled]="loading || submitting || !round?.inProgress || !searchControl.value?.trim()"
+        (click)="submitGuess()"
+      >
+        {{ submitting ? 'Sprawdzam…' : 'Zatwierdź odpowiedź' }}
+        <span aria-hidden="true">↗</span>
+      </button>
+
+      <section class="guess-history" *ngIf="round?.guesses?.length" aria-label="Historia prób">
+        <h3>Twoje próby</h3>
+        <ol>
+          <li *ngFor="let guess of round?.guesses">
+            <span>{{ guess.cityName }}</span>
+            <strong *ngIf="guess.distanceKm > 0"
+              >{{ guess.distanceKm | number: '1.0-0' }} km</strong
+            >
+            <strong *ngIf="guess.distanceKm === 0">Trafione</strong>
+          </li>
+        </ol>
+      </section>
+    </aside>
+
+    <section class="map-panel" aria-label="Mapa tras tramwajowych">
+      <div class="map-toolbar">
+        <div>
+          <span class="map-label">MAPA TRAS</span>
+        </div>
+        <span class="map-date">{{ round?.date }}</span>
+      </div>
+      <div class="map-viewport">
+        <div class="map-canvas" [class.empty]="!routeCoordinates.length">
+          <div
+            #mapElement
+            class="map-renderer"
+            role="img"
+            aria-label="Mapa tras tramwajowych bez etykiet"
+          ></div>
+          <p class="map-message" *ngIf="loading">Ładowanie dzisiejszej mapy…</p>
+          <p class="map-message" *ngIf="!loading && !routeCoordinates.length && !errorMessage">
+            Brak danych mapy dla tej gry.
+          </p>
+          <p class="map-message" *ngIf="routeCoordinates.length && !mapLoaded">
+            {{ mapErrorMessage || 'Ładowanie mapy Maptoolkit…' }}
+          </p>
+        </div>
+      </div>
+    </section>
+  </div>
+</section>

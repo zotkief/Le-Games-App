@@ -5,6 +5,7 @@ import { SettingsComponent } from './pages/settings/settings.component';
 import { DominoComponent } from './pages/domino/domino.component';
 import { Page2Component } from './pages/page2/page2.component';
 import { LoginComponent } from './login.component';
+import { GuessCityComponent } from './pages/guess-city/guess-city.component';
 
 export const routes: Routes = [
   {
@@ -22,6 +23,10 @@ export const routes: Routes = [
   {
     path: 'domino',
     component: DominoComponent
+  },
+  {
+    path: 'guess-city',
+    component: GuessCityComponent
   },
   {
     path: 'page2',
