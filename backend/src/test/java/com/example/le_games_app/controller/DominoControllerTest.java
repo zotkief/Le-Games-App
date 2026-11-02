@@ -1,9 +1,5 @@
 package com.example.le_games_app.controller;
 
-import com.example.le_games_app.models.PlayerIdentity;
-import com.example.le_games_app.repository.PlayerIdentityRepository;
-import com.example.le_games_app.repository.UserRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,15 +8,18 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
-
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import org.springframework.transaction.annotation.Transactional;
 
+import com.example.le_games_app.models.PlayerIdentity;
 import com.example.le_games_app.models.domino.DominoGame;
 import com.example.le_games_app.repository.DominoGameRepository;
+import com.example.le_games_app.repository.PlayerIdentityRepository;
+import com.example.le_games_app.repository.UserRepository;
 import com.example.le_games_app.security.JwtService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -85,7 +84,7 @@ class DominoControllerTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.suggestions").isArray())
         .andExpect(jsonPath("$.suggestions.length()").value(10));
-    }
+    }   
 
     @Test
     void specifiedSuggestionResult() throws Exception {

@@ -1,20 +1,14 @@
 package com.example.le_games_app.support.components;
 
-import java.util.*;
-import jakarta.annotation.*;
 import java.io.BufferedReader;
-import io.jsonwebtoken.io.IOException;
-import java.nio.file.Files;
-import org.springframework.stereotype.Component;
-import java.nio.file.Path;
 import java.io.FileReader;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.util.*;
 
 @Component
 public class CityIndex {
@@ -39,9 +33,6 @@ public class CityIndex {
         }
     }
 
-    // -------------------------
-    // EXACT MATCH (binary search)
-    // -------------------------
     public boolean find(String city) {
         city = city.toUpperCase();
 
@@ -66,9 +57,6 @@ public class CityIndex {
         return false;
     }
 
-    // -------------------------
-    // PREFIX SUGGESTIONS
-    // -------------------------
     public List<String> suggest(String prefix, int limit) {
         prefix = prefix.toUpperCase();
 
@@ -87,7 +75,6 @@ public class CityIndex {
         return result;
     }
 
-    // first position >= prefix
     private int lowerBound(String prefix) {
         int left = 0;
         int right = cities.size();
